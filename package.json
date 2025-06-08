@@ -1,0 +1,24 @@
+{
+  "name": "backend-webserver-app-20250531",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "prettier": "npx prettier --write src",
+    "dev": "npm run build & node ./dist/index.js",
+    "build": "npm run prettier & tsc"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "uuid": "^11.1.0",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/ws": "^8.18.1",
+    "dotenv": "^16.5.0"
+  }
+}
