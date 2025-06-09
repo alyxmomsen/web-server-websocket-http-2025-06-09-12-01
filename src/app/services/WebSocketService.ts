@@ -64,7 +64,8 @@ export class WebSocketService implements IWebSocketService {
     connect(): void {
         if (this.ws) return;
 
-        this.ws = new WebSocketServer({ host: "127.0.0.1", port: 8080 });
+        // this.ws = new WebSocketServer({ host: "127.0.0.1", port: 8080 });
+        this.ws = new WebSocketServer({ host: "109.73.196.90", port: 8080 });
 
         this.ws.addListener("listening", () => {
             console.log("websocket-instance::linstening");
