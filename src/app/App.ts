@@ -18,8 +18,7 @@ export class App {
         this.wss = new WebSocketService();
 
         this.wss.addEventListener("message", (e: string) => {
-            console.log("event" + "...event".repeat(12));
-            console.log(e);
+            // console.log("event" + "...event".repeat(12));
         });
     }
 }
