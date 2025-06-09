@@ -11,6 +11,11 @@ export interface IWebSocketService {
     ): void;
 }
 
+export type TWebsocketMessage = {
+    textContent: string;
+    connectionId: string;
+};
+
 export type TWebSocketEventType = "message" | "other";
 export type TWebSocketEventListener = (e: string) => void;
 
@@ -65,7 +70,12 @@ export class WebSocketService implements IWebSocketService {
         if (this.ws) return;
 
         // this.ws = new WebSocketServer({ host: "127.0.0.1", port: 8080 });
-        this.ws = new WebSocketServer({ host: "109.73.196.90", port: 8080 });
+        const host = process.env.WEB_SERVER_HOST;
+        // choice mode that dev or prod
+        this.ws = new WebSocketServer({
+            host: host || "127.0.0.1" /* "109.73.196.90" */,
+            port: 8080,
+        });
 
         this.ws.addListener("listening", () => {
             console.log("websocket-instance::linstening");
@@ -84,27 +94,42 @@ export class WebSocketService implements IWebSocketService {
             webSocket.addEventListener("message", (e) => {
                 const data = e.data.toString();
 
+                console.log({ data });
+
                 try {
-                    const jsonData = JSON.parse(data) as
-                        | { payload: { message: string } }
-                        | string;
+                    const jsonData = JSON.parse(data) as {
+                        textContent: string;
+                    };
+
                     console.log("connection-websocket::message");
-                    console.log(jsonData);
+                    console.log({ jsonData });
                     if (typeof jsonData === "object" && "payload" in jsonData) {
-                        this.emit("message", jsonData.payload.message);
+                        this.emit("message", jsonData.textContent);
                     } else {
-                        this.emit("message", jsonData);
+                        this.emit("message", jsonData.textContent);
                     }
+
+                    const textContent = jsonData.textContent;
+
+                    /**
+                     * все клиенты получают сообщение
+                     */
+                    this.connectionsPool.forEach((websocketConnection, key) => {
+                        const websocketMessage: TWebsocketMessage = {
+                            textContent,
+                            connectionId: key,
+                        };
+
+                        websocketConnection.send(
+                            JSON.stringify(websocketMessage),
+                        );
+                    });
+
+                    console.log("message sent just now");
                 } catch (err) {
                     console.log("connection-websocket::message");
                     console.log("JSON parsing is failed");
                 }
-
-                this.connectionsPool.forEach((elem, key) => {
-                    elem.send(
-                        "hello this is server. you connection is: " + key,
-                    );
-                });
             });
 
             webSocket.addEventListener("close", () => {

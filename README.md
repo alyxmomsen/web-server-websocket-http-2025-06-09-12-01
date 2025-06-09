@@ -1,0 +1,4 @@
+.env data:
+
+FRONTEND
+WEB_SERVER_HOST
