@@ -1,5 +1,4 @@
 import express, { Express } from "express";
-import path, { join, resolve } from "path";
 
 export interface IHTTPService {
     connect(): void;
@@ -7,7 +6,9 @@ export interface IHTTPService {
 
 export class HTTPService implements IHTTPService {
     private server: Express;
+
     connect(): void {
+
         const port = 3001;
         const frontendPath = process.env.FRONTEND;
 
