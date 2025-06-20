@@ -8,7 +8,6 @@ export class HTTPService implements IHTTPService {
     private server: Express;
 
     connect(): void {
-
         const port = 3001;
         const frontendPath = process.env.FRONTEND;
 

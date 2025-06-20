@@ -68,12 +68,12 @@ export class WebSocketService implements IWebSocketService {
 
     connect(): void {
         if (this.ws) return;
-
+        
         // this.ws = new WebSocketServer({ host: "127.0.0.1", port: 8080 });
         const host = process.env.WEB_SERVER_HOST;
         // choice mode that dev or prod
         this.ws = new WebSocketServer({
-            host: host || "127.0.0.1" /* "109.73.196.90" */,
+            // host: host || "127.0.0.1" /* "109.73.196.90" */,
             port: 8080,
         });
 
@@ -103,11 +103,8 @@ export class WebSocketService implements IWebSocketService {
 
                     console.log("connection-websocket::message");
                     console.log({ jsonData });
-                    if (typeof jsonData === "object" && "payload" in jsonData) {
-                        this.emit("message", jsonData.textContent);
-                    } else {
-                        this.emit("message", jsonData.textContent);
-                    }
+
+                    this.emit("message", jsonData.textContent);
 
                     const textContent = jsonData.textContent;
 
@@ -156,7 +153,7 @@ export class WebSocketService implements IWebSocketService {
 
     constructor() {
         this.ws = null;
-
+        if(this.ws !==null) this.ws 
         this.eventListenersPool = new Map();
         this.connectionsPool = new Map();
     }
