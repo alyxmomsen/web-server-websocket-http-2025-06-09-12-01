@@ -1,4 +1,4 @@
-import {  MongoClient } from "mongodb";
+import { MongoClient } from "mongodb";
 
 export interface IDBService {
     connect(): Promise<void>;
@@ -6,7 +6,9 @@ export interface IDBService {
 }
 
 export class MongoDBService implements IDBService {
-    client: MongoClient;
+    // #dev::temp : временно установил MongoDBService::client с модификатором public
+    // потому что на
+    public client: MongoClient;
 
     // execute(transactionBeh:IDBTransactionBeh): void {
     //     transactionBeh.execute(this.client);
@@ -16,7 +18,7 @@ export class MongoDBService implements IDBService {
         await this.client.connect();
     }
 
-    constructor(mongoClient:MongoClient) {
+    constructor(mongoClient: MongoClient) {
         this.client = mongoClient;
     }
 }

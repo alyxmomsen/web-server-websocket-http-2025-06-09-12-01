@@ -1,13 +1,11 @@
-import {
-    MongoDBService,
-} from "./services/data-base-services/DBService";
+import { MongoDBService } from "./services/data-base-services/DBService";
 import { HTTPService, IHTTPService } from "./services/HTTPService";
 import {
     IWebSocketService,
     WebSocketService,
 } from "./services/WebSocketService";
 
-import { MongoClient } from 'mongodb'
+import { MongoClient } from "mongodb";
 
 export class App {
     private db: MongoDBService; //IDBService
@@ -20,13 +18,14 @@ export class App {
     }
 
     constructor() {
-        this.db = new MongoDBService(new MongoClient('mongodb://127.0.0.1:27017'));
+        this.db = new MongoDBService(
+            new MongoClient("mongodb://127.0.0.1:27017"),
+        );
 
         this.HTTPService = new HTTPService();
         this.wss = new WebSocketService();
 
         this.wss.addEventListener("message", (eventDataString: string) => {
-            
             // let err:null|unknown = null;
 
             // try {
