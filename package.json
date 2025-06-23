@@ -9,7 +9,7 @@
   "scripts": {
     "prettier": "npx prettier --write src",
     "dev": "npm run build & node ./dist/index.js",
-    "build": "npm run prettier & tsc"
+    "build": "tsc"
   },
   "dependencies": {
     "express": "^5.1.0",

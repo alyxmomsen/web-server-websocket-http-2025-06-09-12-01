@@ -2,13 +2,38 @@ import WebSocket, { WebSocketServer } from "ws";
 import { v4 as uuidV4 } from "uuid";
 import { error } from "console";
 
+namespace WebSocketService {
+    export type world = string;
+}
+
+// export type TWebsocketEventType
+
+export type TWebsocketEvent =
+    | {
+          type: "connection";
+          listener: TWebSocketEventListener;
+      }
+    | {
+          type: "message";
+          listener: TWebSocketEventListener;
+      };
+
 export interface IWebSocketService {
     connect(): void;
     // addEventListener(eventType: "message", eventListener: (e:string) => void): void;
+    onConnection(listener: TOnConnectionListener): void;
     addEventListener(
-        eventType: TWebSocketEventType,
-        eventListener: TWebSocketEventListener,
+        { type, listener }: TWebsocketEvent,
+        // { eventType: TWebSocketEventType;
+        // eventListener: TWebSocketEventListener}
     ): void;
+    emit({
+        eventType,
+        payload,
+    }: {
+        eventType: TWebSocketEventType;
+        payload: string;
+    }): void;
 }
 
 export type TWebsocketOutgoingMessage = {
@@ -29,19 +54,27 @@ export type TWebsocketIncomingMessage =
           };
       };
 
-export type TWebSocketEventType = "message" | "other";
+export type TWebSocketEventType = "message" | "connection";
 
-export type TWebSocketEventListener = (e: string) => void;
+export type TWebSocketEventListener = (event: string) => void;
+// export type TWebSocketEventListener
 
 /* ----------------------------------------------------- */
+
+export type TOnConnectionListener = (e: {
+    connections: WebsocketConnection[];
+}) => void;
 
 export class WebSocketService implements IWebSocketService {
     /** collections */
     private connectionsPool: Map<string, WebsocketConnection>;
-    private eventListenersPool: Map<string, TWebSocketEventListener[]>;
+    private eventListenersPool: Map<
+        TWebSocketEventType,
+        TWebSocketEventListener[]
+    >;
+    private onConnectListenersPool: TOnConnectionListener[];
     /** services */
     private ws: WebSocketServer | null;
-
     private generateUnicId(
         collection: Map<string, WebsocketConnection>,
         webSocket: WebSocket,
@@ -59,27 +92,42 @@ export class WebSocketService implements IWebSocketService {
         }
     }
 
-    addEventListener(
-        eventType: TWebSocketEventType,
-        eventListener: TWebSocketEventListener,
-    ): void {
-        const listeners = this.eventListenersPool.get(eventType);
-
-        if (listeners === undefined) {
-            this.eventListenersPool.set(eventType, []);
-        }
-
-        this.eventListenersPool.get(eventType)?.push(eventListener);
+    onConnection(listener: TOnConnectionListener): void {
+        this.onConnectListenersPool.push(listener);
     }
 
-    emit(eventType: TWebSocketEventType, eventData: string) {
-        const listeners = this.eventListenersPool.get(eventType);
+    addEventListener({ type, listener }: TWebsocketEvent): void {
+        const listeners = this.eventListenersPool.get(type);
 
-        if (listeners === undefined) return;
+        if (listeners === undefined) {
+            this.eventListenersPool.set(type, []);
+        }
 
-        listeners.forEach((listener) => {
-            listener(eventData);
-        });
+        this.eventListenersPool.get(type)?.push(listener);
+    }
+
+    emit({
+        eventType,
+        payload,
+    }: {
+        eventType: TWebSocketEventType;
+        payload: string;
+    }): void {
+        switch (eventType) {
+            case "message":
+                const listeners = this.eventListenersPool.get(eventType);
+
+                if (listeners === undefined) return;
+
+                listeners.forEach((listener) => {
+                    if (eventType === "message") {
+                        listener(payload);
+                    }
+                });
+                break;
+            case "connection":
+                break;
+        }
     }
 
     connect(): void {
@@ -101,11 +149,25 @@ export class WebSocketService implements IWebSocketService {
             console.log("connection-connected::connection-event");
 
             const uuid = this.generateUnicId(this.connectionsPool, webSocket);
-            this.connectionsPool.set(uuid, new WebsocketConnection(webSocket));
+            const connection = new WebsocketConnection(webSocket);
+            this.connectionsPool.set(uuid, connection);
             console.log(
                 "connection-connected::connection-added : length:",
                 this.connectionsPool.size,
             );
+
+            this.emit({
+                eventType: "connection",
+                payload: "hello friends i am a new member",
+            });
+
+            this.connectionsPool.forEach((websocket, key) => {
+                //middleware();
+
+                websocket.send("we have a new connection");
+            });
+
+            // connection.send("hello friend");
 
             webSocket.addEventListener("message", (e) => {
                 const serializedData = e.data.toString();
@@ -120,15 +182,17 @@ export class WebSocketService implements IWebSocketService {
 
                     switch (action.type) {
                         case "message": {
-                            new MessageBehavior(this.connectionsPool).execute(
-                                action,
-                                (
-                                    actionType: TWebSocketEventType,
-                                    eventData: string,
-                                ) => {
-                                    this.emit(actionType, eventData);
+                            messageBehavior(
+                                this.connectionsPool,
+                                action.payload,
+                                (eventData: string) => {
+                                    this.emit({
+                                        eventType: "message",
+                                        payload: eventData,
+                                    });
                                 },
                             );
+
                             // const pl = jsonData.payload;
                             // const textContent = jsonData.payload;
 
@@ -189,9 +253,13 @@ export class WebSocketService implements IWebSocketService {
     }
 
     constructor() {
+        // websocket
         this.ws = null;
         if (this.ws !== null) this.ws;
+
+        // collections
         this.eventListenersPool = new Map();
+        this.onConnectListenersPool = [];
         this.connectionsPool = new Map();
     }
 }
@@ -220,28 +288,19 @@ export class WebsocketConnection implements IWebsocketConnection {
 }
 
 interface IMessageBehavior {
-    execute(
-        action: { type: TWebSocketEventType; payload: string },
-        fn: (eventType: TWebSocketEventType, eventData: string) => void,
-    ): void;
+    execute(payload: string, emit: (eventData: string) => void): void;
 }
 
 class MessageBehavior implements IMessageBehavior {
+    //
     private connectionsPool: Map<string, IWebsocketConnection>;
 
-    execute(
-        action: { type: TWebSocketEventType; payload: string },
-        emit: (eventType: TWebSocketEventType, eventData: string) => void,
-    ) {
-        const actionType = action.type;
-        const textContent = action.payload;
+    execute(payload: string, emit: (eventData: string) => void) {
+        const textContent = payload;
         /**
          * все клиенты получают сообщение
          */
-
-        console.log("hell o fr");
         this.connectionsPool.forEach((websocketConnection, key) => {
-            console.log("hello friend");
             const websocketMessage: TWebsocketOutgoingMessage = {
                 textContent,
                 connectionId: key,
@@ -249,10 +308,30 @@ class MessageBehavior implements IMessageBehavior {
             websocketConnection.send(JSON.stringify(websocketMessage));
         });
 
-        emit(actionType, textContent);
+        emit(textContent);
     }
 
     constructor(pool: Map<string, IWebsocketConnection>) {
         this.connectionsPool = pool;
     }
+}
+
+function messageBehavior(
+    pool: Map<string, IWebsocketConnection>,
+    payload: string,
+    emit: (eventData: string) => void,
+) {
+    const textContent = payload;
+    /**
+     * все клиенты получают сообщение
+     */
+    pool.forEach((websocketConnection, key) => {
+        const websocketMessage: TWebsocketOutgoingMessage = {
+            textContent,
+            connectionId: key,
+        };
+        websocketConnection.send(JSON.stringify(websocketMessage));
+    });
+
+    emit(textContent);
 }
