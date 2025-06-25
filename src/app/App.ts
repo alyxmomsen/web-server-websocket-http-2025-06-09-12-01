@@ -33,18 +33,16 @@ export class App {
                 .collection("log")
                 .find({});
 
-            const docs:WithId<Document>[] = await docsArr.toArray();
+            const docs: WithId<Document>[] = await docsArr.toArray();
 
             const message: TWebsocketOutgoingMessage = {
-                type: "message/story", 
-                textContent: "",
-                payload:docs,
+                type: "message/story",
+                payload: docs,
             };
 
             const serializedMessage: TSerializedData = JSON.stringify(message);
 
             e.connection.send(serializedMessage);
-
         });
 
         this.wss.addEventListener({

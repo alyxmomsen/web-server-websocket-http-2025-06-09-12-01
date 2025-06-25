@@ -49,20 +49,15 @@ export type TOutgoingMessageType = "simple-message" | "all-messages";
 export type TSerializedData = string;
 
 // on front must be the same
-export type TWebsocketOutgoingMessage = | ({
-    type: "message/current";
-    payload: null;
-} & {
-    textContent: string;
-    // connectionId: string;
-})
-| ({
-    type: "message/story";
-    payload: WithId<Document>[];
-} & {
-    textContent: string
-    // connectionId: string;
-});
+export type TWebsocketOutgoingMessage =
+    | {
+          type: "message/current";
+          payload: string;
+      }
+    | {
+          type: "message/story";
+          payload: WithId<Document>[];
+      };
 
 // Такой же тип должен быть на фронте
 export type TWebsocketIncomingMessage =
@@ -236,27 +231,6 @@ export class WebSocketService implements IWebSocketService {
                                 },
                             );
 
-                            // const pl = jsonData.payload;
-                            // const textContent = jsonData.payload;
-
-                            // /**
-                            //  * все клиенты получают сообщение
-                            //  */
-                            // this.connectionsPool.forEach(
-                            //     (websocketConnection, key) => {
-                            //         const websocketMessage: TWebsocketOutgoingMessage =
-                            //             {
-                            //                 textContent,
-                            //                 connectionId: key,
-                            //             };
-
-                            //         websocketConnection.send(
-                            //             JSON.stringify(websocketMessage),
-                            //         );
-                            //     },
-                            // );
-
-                            // this.emit("message", pl);
                             break;
                         }
                         case "command": {
@@ -346,9 +320,7 @@ class MessageBehavior implements IMessageBehavior {
         this.connectionsPool.forEach((websocketConnection, key) => {
             const websocketMessage: TWebsocketOutgoingMessage = {
                 type: "message/current",
-                // connectionId: key,
-                textContent:'',
-                payload: null, // is this hard-code ?
+                payload: "",
             };
             websocketConnection.send(JSON.stringify(websocketMessage));
         });
@@ -364,7 +336,7 @@ class MessageBehavior implements IMessageBehavior {
 function sendToAllMessageBehavior(
     pool: Map<string, IWebsocketConnection>,
     payload: string,
-    emit: (eventData: string) => void,
+    emitWrapper: (eventData: string) => void,
 ) {
     const textContent = payload;
     /**
@@ -373,14 +345,14 @@ function sendToAllMessageBehavior(
     pool.forEach((websocketConnection, key) => {
         const websocketMessage: TWebsocketOutgoingMessage = {
             type: "message/current",
-            textContent,
-            // connectionId: key,
-            payload: null, // is this hard-code
+            payload, // is this hard-code
         };
         websocketConnection.send(JSON.stringify(websocketMessage));
     });
 
-    emit(textContent);
+    // после того как сообщение забродкастилось вызываем обработку события,
+    // для локального какого либо пост-действия
+    emitWrapper(textContent);
 }
 
 // функция для  создания websocket message
