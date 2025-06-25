@@ -2,12 +2,12 @@ import { MongoDBService } from "./services/data-base-services/DBService";
 import { HTTPService, IHTTPService } from "./services/HTTPService";
 import {
     IWebSocketService,
-    TOnConnectionListener,
-    WebsocketConnection,
+    TSerializedData,
+    TWebsocketOutgoingMessage,
     WebSocketService,
 } from "./services/WebSocketService";
 
-import { MongoClient } from "mongodb";
+import { Document, MongoClient, WithId } from "mongodb";
 
 export class App {
     private db: MongoDBService; //IDBService
@@ -27,20 +27,29 @@ export class App {
         this.HTTPService = new HTTPService();
         this.wss = new WebSocketService();
 
-        this.wss.onConnection((e) => {
-            const data = this.db.client.db("daemon").collection("log").find({});
-            data.toArray().then((docs) => {
-                console.log(docs);
+        this.wss.onConnection(async (e) => {
+            const docsArr = this.db.client
+                .db("daemon")
+                .collection("log")
+                .find({});
 
-                e.connections.forEach((connection) => {
-                    connection.send("hello every one");
-                });
-            });
+            const docs:WithId<Document>[] = await docsArr.toArray();
+
+            const message: TWebsocketOutgoingMessage = {
+                type: "message/story", 
+                textContent: "",
+                payload:docs,
+            };
+
+            const serializedMessage: TSerializedData = JSON.stringify(message);
+
+            e.connection.send(serializedMessage);
+
         });
 
         this.wss.addEventListener({
             type: "message",
-            listener: (eventDataString: string) => {
+            handler: (eventDataString: string) => {
                 console.log("its message dude");
 
                 // let err:null|unknown = null;
