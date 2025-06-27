@@ -1,3 +1,5 @@
+import dotenv from "dotenv"
+dotenv.config();
 import { MongoDBService } from "./services/data-base-services/DBService";
 import { HTTPService, IHTTPService } from "./services/HTTPService";
 import {
@@ -21,7 +23,11 @@ export class App {
 
     constructor() {
 
-        const str = 'mongodb://daemon13:Donjuan1619m!ng@127.0.0.1:27017/daemon13?authSource=admin'
+        const DATABASE_USERNAME = process.env.DATABASE_USERNAME;
+        const DATABASE_PASSWORD = process.env.DATABASE_PASSWORD;
+        const AUTH_SOURCE = process.env.AUTH_SOURCE;
+
+        const str = `mongodb://${DATABASE_USERNAME}:${DATABASE_PASSWORD}@127.0.0.1:27017/${DATABASE_USERNAME}?authSource=${AUTH_SOURCE}`
 
         // #todo : отработать кейс где неудачное подключение к датабейс
         this.db = new MongoDBService(
