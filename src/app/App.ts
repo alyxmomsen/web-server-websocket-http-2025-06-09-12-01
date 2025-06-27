@@ -20,8 +20,12 @@ export class App {
     }
 
     constructor() {
+
+        const str = 'mongodb://daemon13:Donjuan1619m!ng@127.0.0.1:27017/daemon13?authSource=admin'
+
+        // #todo : отработать кейс где неудачное подключение к датабейс
         this.db = new MongoDBService(
-            new MongoClient("mongodb://127.0.0.1:27017"),
+            new MongoClient(str),
         );
 
         this.HTTPService = new HTTPService();
