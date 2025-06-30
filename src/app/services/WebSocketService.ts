@@ -11,13 +11,13 @@ namespace WebSocketService {
 
 export type TWebsocketEvent =
     | {
-          type: "connection";
-          handler: TWebSocketEventHandler;
-      }
+        type: "connection";
+        handler: TWebSocketEventHandler;
+    }
     | {
-          type: "message";
-          handler: TWebSocketEventHandler;
-      };
+        type: "message";
+        handler: TWebSocketEventHandler;
+    };
 
 export interface IWebSocketService {
     connect(): void;
@@ -33,15 +33,15 @@ export interface IWebSocketService {
         payload,
     }:
         | {
-              eventType: "connection";
-              payload: {
-                  websocketConnection: IWebsocketConnection;
-              };
-          }
+            eventType: "connection";
+            payload: {
+                websocketConnection: IWebsocketConnection;
+            };
+        }
         | {
-              eventType: "message";
-              payload: string;
-          }): void;
+            eventType: "message";
+            payload: string;
+        }): void;
 }
 
 export type TOutgoingMessageType = "simple-message" | "all-messages";
@@ -53,23 +53,23 @@ export type TWebsocketOutgoingMessage = | ({
     type: "message/current";
     payload: string;
 })
-| ({
-    type: "message/story";
-    payload: WithId<Document>[];
-});
+    | ({
+        type: "message/story";
+        payload: WithId<Document>[];
+    });
 
 // Такой же тип должен быть на фронте
 export type TWebsocketIncomingMessage =
     | {
-          type: "message";
-          payload: string;
-      }
+        type: "message";
+        payload: string;
+    }
     | {
-          type: "command";
-          payload: {
-              action: { type: "insert"; payload: string };
-          };
-      };
+        type: "command";
+        payload: {
+            action: { type: "insert"; payload: string };
+        };
+    };
 
 export type TWebSocketEventType = "message" | "connection";
 
@@ -128,15 +128,15 @@ export class WebSocketService implements IWebSocketService {
         payload,
     }:
         | {
-              eventType: "connection";
-              payload: {
-                  websocketConnection: IWebsocketConnection;
-              };
-          }
+            eventType: "connection";
+            payload: {
+                websocketConnection: IWebsocketConnection;
+            };
+        }
         | {
-              eventType: "message";
-              payload: string;
-          }): void {
+            eventType: "message";
+            payload: string;
+        }): void {
         /**
          * #todo:
          *
@@ -170,10 +170,10 @@ export class WebSocketService implements IWebSocketService {
 
         // this.ws = new WebSocketServer({ host: "127.0.0.1", port: 8080 });
         const host = process.env.WEB_SERVER_HOST;
+        const port = 8080;
         // choice mode that dev or prod
         this.ws = new WebSocketServer({
-            // host: host || "127.0.0.1" /* "109.73.196.90" */,
-            port: 8080,
+            port,
         });
 
         this.ws.addListener("listening", () => {
@@ -355,4 +355,4 @@ function sendToAllMessageBehavior(
 }
 
 // функция для  создания websocket message
-function websocketMessageCreator() {}
+function websocketMessageCreator() { }
