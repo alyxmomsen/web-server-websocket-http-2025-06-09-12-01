@@ -19,8 +19,7 @@ export class MongoDBService implements IDBService {
     }
 
     constructor(mongoClient: MongoClient) {
-
-        mongoClient.db('daemon').collection('log').insertOne({test:'one'});
+        mongoClient.db("daemon").collection("log").insertOne({ test: "one" });
 
         this.client = mongoClient;
     }

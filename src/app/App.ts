@@ -40,12 +40,20 @@ export class App {
                 .collection("log")
                 .find({});
 
-            const docs: WithId<Document>[] = await docsArr.toArray();
+            const docs = (await docsArr.toArray()) as (WithId<Document> & {
+                date: number;
+                message: string;
+            })[];
 
             const message: TWebsocketOutgoingMessage = {
                 type: "message/story",
-                payload: docs,
+                payload:
+                    docs /* .map(elem => ({_id:elem._id , date:elem.date , message:elem.message})) */,
             };
+
+            // message.payload.forEach(elem => {
+            //     console.log(elem.);
+            // });
 
             const serializedMessage: TSerializedData = JSON.stringify(message);
 
@@ -54,7 +62,7 @@ export class App {
 
         this.wss.addEventListener({
             type: "message",
-            handler: (eventDataString: string) => {
+            handler: ({ message, date }: { message: string; date: number }) => {
                 console.log("its message dude");
 
                 // let err:null|unknown = null;
@@ -75,7 +83,7 @@ export class App {
 
                 this.db.client.db("daemon").collection("log").insertOne({
                     date: Date.now(),
-                    message: eventDataString,
+                    message,
                 });
             },
         });

@@ -40,24 +40,31 @@ export interface IWebSocketService {
           }
         | {
               eventType: "message";
-              payload: string;
+              payload: { message: string; date: number };
           }): void;
 }
 
-export type TOutgoingMessageType = "simple-message" | "all-messages";
+// export type TOutgoingMessageType = "simple-message" | "all-messages";
 
 export type TSerializedData = string;
 
+export type TNewMessageWebsocketOutgoingMessage = {
+    type: "message/new";
+    payload: {
+        message: string;
+        date: number;
+    };
+};
+
+export type TMessageStoryWebsocketOutgoingMessage = {
+    type: "message/story";
+    payload: (WithId<Document> & { date: number; message: string })[];
+};
+
 // on front must be the same
 export type TWebsocketOutgoingMessage =
-    | {
-          type: "message/current";
-          payload: string;
-      }
-    | {
-          type: "message/story";
-          payload: WithId<Document>[];
-      };
+    | TNewMessageWebsocketOutgoingMessage
+    | TMessageStoryWebsocketOutgoingMessage;
 
 // Такой же тип должен быть на фронте
 export type TWebsocketIncomingMessage =
@@ -74,7 +81,10 @@ export type TWebsocketIncomingMessage =
 
 export type TWebSocketEventType = "message" | "connection";
 
-export type TWebSocketEventHandler = (event: string) => void;
+export type TWebSocketEventHandler = (event: {
+    message: string;
+    date: number;
+}) => void;
 // export type TWebSocketEventListener
 
 /* ----------------------------------------------------- */
@@ -136,7 +146,7 @@ export class WebSocketService implements IWebSocketService {
           }
         | {
               eventType: "message";
-              payload: string;
+              payload: { message: string; date: number };
           }): void {
         /**
          * #todo:
@@ -155,13 +165,13 @@ export class WebSocketService implements IWebSocketService {
             );
         }
 
-        const listeners = this.eventListenersPool.get(eventType);
+        const handlers = this.eventListenersPool.get(eventType);
 
-        if (listeners === undefined) return;
+        if (handlers === undefined) return;
 
-        listeners.forEach((listener) => {
+        handlers.forEach((handler) => {
             if (eventType === "message") {
-                listener(payload);
+                handler(payload);
             }
         });
     }
@@ -218,12 +228,20 @@ export class WebSocketService implements IWebSocketService {
                     console.log("connection-websocket::message");
                     console.log({ jsonData: action });
 
+                    const currentDate = Date.now();
+
                     switch (action.type) {
                         case "message": {
                             sendToAllMessageBehavior(
                                 this.connectionsPool,
-                                action.payload,
-                                (eventData: string) => {
+                                {
+                                    message: action.payload,
+                                    date: currentDate,
+                                },
+                                (eventData: {
+                                    message: string;
+                                    date: number;
+                                }) => {
                                     this.emit({
                                         eventType: "message",
                                         payload: eventData,
@@ -319,8 +337,11 @@ class MessageBehavior implements IMessageBehavior {
          */
         this.connectionsPool.forEach((websocketConnection, key) => {
             const websocketMessage: TWebsocketOutgoingMessage = {
-                type: "message/current",
-                payload: "",
+                type: "message/new",
+                payload: {
+                    message: "",
+                    date: 123123123123,
+                },
             };
             websocketConnection.send(JSON.stringify(websocketMessage));
         });
@@ -335,8 +356,11 @@ class MessageBehavior implements IMessageBehavior {
 
 function sendToAllMessageBehavior(
     pool: Map<string, IWebsocketConnection>,
-    payload: string,
-    emitWrapper: (eventData: string) => void,
+    payload: {
+        message: string;
+        date: number;
+    },
+    emitWrapper: (eventData: { message: string; date: number }) => void,
 ) {
     const textContent = payload;
     /**
@@ -344,7 +368,7 @@ function sendToAllMessageBehavior(
      */
     pool.forEach((websocketConnection, key) => {
         const websocketMessage: TWebsocketOutgoingMessage = {
-            type: "message/current",
+            type: "message/new",
             payload, // is this hard-code? #
         };
         websocketConnection.send(JSON.stringify(websocketMessage));
